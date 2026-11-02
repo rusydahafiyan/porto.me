@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Porto">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>Porto</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter (Heavy Neo-Grotesque for Logo & UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          colors: {
+            mono: {
+              black: '#0A0A0A',
+              white: '#FFFFFF',
+              gray: '#F3F4F6',
+            },
+            emerald: {
+              accent: '#10B981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #F3F4F6;
+      color: #0A0A0A;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overscroll-behavior-y: none;
+      user-select: none;
+    }
+    input, select, textarea {
+      user-select: auto;
+      font-size: 16px !important; /* Mencegah auto-zoom di Safari iOS */
+    }
+    .safe-top {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    .safe-bottom {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .logo-porto {
+      font-weight: 900;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+    /* Sembunyikan scrollbar tapi tetap bisa scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between max-w-md mx-auto bg-[#F3F4F6] relative shadow-xl">
+
+  <!-- HEADER MINIMALIS -->
+  <header class="bg-[#0A0A0A] text-white px-5 pb-4 safe-top sticky top-0 z-30 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <h1 class="logo-porto text-3xl text-white select-none">Porto</h1>
+      <span id="headerTripBadge" class="text-[11px] font-semibold bg-white/15 text-gray-200 px-2.5 py-0.5 rounded-full truncate max-w-[150px]">
+        Trip Aktif
+      </span>
+    </div>
+    <div class="text-right">
+      <p class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Cuan Bersih</p>
+      <p id="headerProfit" class="text-sm font-extrabold text-[#10B981]">Rp 0</p>
+    </div>
+  </header>
+
+  <!-- KONTEN UTAMA -->
+  <main class="flex-1 px-4 pt-4 pb-28 overflow-y-auto">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: BELANJAAN (INPUT CEPAT DI TOKO)     -->
+    <!-- ========================================== -->
+    <section id="tab-orders" class="space-y-4">
+      
+      <!-- Form Input Cepat -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Input Cepat Barang</h2>
+          <button type="button" onclick="resetOrderForm()" class="text-[11px] font-semibold text-gray-400 hover:text-black">Reset</button>
+        </div>
+
+        <form id="orderForm" onsubmit="handleAddOrder(event)" class="space-y-2.5">
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Pemesan</label>
+              <input type="text" id="ordCustomer" required placeholder="Nama" 
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-3 py-2 text-sm font-medium outline-none transition">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Nama Barang</label>
+              <input type="text" id="ordItem" required placeholder="Zara Jacket M" 
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-3 py-2 text-sm font-medium outline-none transition">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-4">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Mata Uang</label>
+              <select id="ordCurrency" onchange="updateOrderPreview()" 
+                class="w-full bg-[#F3F4F6] focus:bg-white border border-transparent focus:border-[#0A0A0A] rounded-xl px-2.5 py-2 text-sm font-bold outline-none">
+                <option value="IDR">IDR</option>
+                <option value="JPY">JPY</option>
+                <option value="SGD">SGD</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="KRW">KRW</option>
+              </select>
+            </div>
+            <div class="col-span-5">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Harga Asli Rak</label>
+              <input type="number" step="any" id="ordPrice" required placeholder="0" oninput="updateOrderPreview()"
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-3 py-2 text-sm font-bold outline-none">
+            </div>
+            <div class="col-span-3">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Diskon %</label>
+              <input type="number" step="any" id="ordDiscount" value="0" min="0" max="100" oninput="updateOrderPreview()"
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-2.5 py-2 text-sm font-bold text-center outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-5">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Jastip Fee (Rp)</label>
+              <input type="number" step="any" id="ordFee" value="0" placeholder="50000" oninput="updateOrderPreview()"
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-3 py-2 text-sm font-medium outline-none">
+            </div>
+            <div class="col-span-4">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">DP Masuk (Rp)</label>
+              <input type="number" step="any" id="ordDp" value="0" placeholder="0" oninput="updateOrderPreview()"
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-3 py-2 text-sm font-medium outline-none">
+            </div>
+            <div class="col-span-3">
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Berat (Kg)</label>
+              <input type="number" step="0.1" id="ordWeight" value="0.5" min="0"
+                class="w-full bg-[#F3F4F6] border border-transparent focus:border-[#0A0A0A] focus:bg-white rounded-xl px-2.5 py-2 text-sm font-medium text-center outline-none">
+            </div>
+          </div>
+
+          <!-- Pilihan Mode Diskon di Form -->
+          <div class="pt-1">
+            <div class="grid grid-cols-3 gap-1.5 bg-[#F3F4F6] p-1 rounded-xl text-[11px] font-bold">
+              <button type="button" onclick="setOrderDiscMode('buyer')" id="ordMode-buyer" class="py-1.5 rounded-lg bg-[#0A0A0A] text-white transition">Diskon Pembeli</button>
+              <button type="button" onclick="setOrderDiscMode('split')" id="ordMode-split" class="py-1.5 rounded-lg text-gray-600 transition">Bagi 50:50</button>
+              <button type="button" onclick="setOrderDiscMode('jastipper')" id="ordMode-jastipper" class="py-1.5 rounded-lg text-gray-600 transition">Laba Penuh</button>
+            </div>
+          </div>
+
+          <!-- Bar Pratinjau Harga Jual & Laba -->
+          <div class="bg-[#F3F4F6] rounded-xl px-3 py-2 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-gray-500 font-medium">Harga Jual:</span>
+              <span id="ordPreviewSell" class="font-extrabold text-[#0A0A0A] ml-1">Rp 0</span>
+            </div>
+            <div>
+              <span class="text-gray-500 font-medium">Cuan:</span>
+              <span id="ordPreviewProfit" class="font-extrabold text-[#10B981] ml-1">+Rp 0</span>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-[#0A0A0A] active:scale-[0.99] text-white font-bold text-sm py-3 rounded-xl shadow-sm transition">
+            + Simpan Belanjaan
+          </button>
+        </form>
+      </div>
+
+      <!-- Filter Status Ringkas -->
+      <div class="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <div class="flex space-x-1.5">
+          <button onclick="setFilter('ALL')" id="flt-ALL" class="px-3 py-1.5 rounded-full text-xs font-bold bg-[#0A0A0A] text-white">Semua</button>
+          <button onclick="setFilter('BELUM')" id="flt-BELUM" class="px-3 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200">Belum Dibeli</button>
+          <button onclick="setFilter('SUDAH')" id="flt-SUDAH" class="px-3 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200">Sudah Dibeli</button>
+          <button onclick="setFilter('KOSONG')" id="flt-KOSONG" class="px-3 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200">Kosong</button>
+        </div>
+      </div>
+
+      <!-- Daftar Kartu Belanjaan -->
+      <div id="ordersList" class="space-y-2.5"></div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: KALKULATOR CEPAT (DI DEPAN RAK)     -->
+    <!-- ========================================== -->
+    <section id="tab-calc" class="space-y-4 hidden">
+      
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Kalkulator Depan Rak</h2>
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="calcBufferToggle" checked onchange="runQuickCalc()" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 peer-checked:bg-[#10B981] rounded-full relative transition">
+              <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 peer-checked:translate-x-4 transition"></div>
+            </div>
+            <span class="text-[11px] font-bold text-[#0A0A0A]">Kurs Aman +2.5%</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-12 gap-2.5">
+          <div class="col-span-4">
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Mata Uang</label>
+            <select id="calcCurrency" onchange="runQuickCalc()" 
+              class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2.5 text-sm font-extrabold outline-none border border-transparent focus:border-[#0A0A0A]">
+              <option value="JPY">JPY</option>
+              <option value="SGD">SGD</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="KRW">KRW</option>
+              <option value="IDR">IDR</option>
+            </select>
+          </div>
+          <div class="col-span-8">
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Harga Rak Toko</label>
+            <input type="number" step="any" id="calcPrice" placeholder="Contoh: 5900" oninput="runQuickCalc()"
+              class="w-full bg-[#F3F4F6] rounded-xl px-3.5 py-2.5 text-base font-extrabold outline-none border border-transparent focus:border-[#0A0A0A] focus:bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Diskon Toko (%)</label>
+            <input type="number" step="any" id="calcDiscount" value="0" min="0" max="100" oninput="runQuickCalc()"
+              class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2 text-sm font-bold outline-none border border-transparent focus:border-[#0A0A0A] focus:bg-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Jastip Fee (Rp)</label>
+            <input type="number" step="any" id="calcFee" value="50000" oninput="runQuickCalc()"
+              class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2 text-sm font-bold outline-none border border-transparent focus:border-[#0A0A0A] focus:bg-white">
+          </div>
+        </div>
+
+        <!-- 3 Pilihan Distribusi Diskon -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 mb-1.5">Distribusi Diskon Toko</label>
+          <div class="grid grid-cols-1 gap-1.5">
+            <button type="button" onclick="setCalcDiscMode('buyer')" id="calcMode-buyer"
+              class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition bg-[#0A0A0A] text-white border-[#0A0A0A]">
+              <span>1. Diskon untuk Pembeli</span>
+              <span class="text-[10px] opacity-80 font-medium">Harga jual turun</span>
+            </button>
+            <button type="button" onclick="setCalcDiscMode('split')" id="calcMode-split"
+              class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition bg-[#F3F4F6] text-[#0A0A0A] border-transparent">
+              <span>2. Bagi Dua 50:50</span>
+              <span class="text-[10px] text-gray-500 font-medium">Pembeli & Jastipper bagi diskon</span>
+            </button>
+            <button type="button" onclick="setCalcDiscMode('jastipper')" id="calcMode-jastipper"
+              class="w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition bg-[#F3F4F6] text-[#0A0A0A] border-transparent">
+              <span>3. Laba Penuh Jastipper</span>
+              <span class="text-[10px] text-gray-500 font-medium">Diskon jadi profit penuh</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output Angka Besar & Jelas -->
+      <div class="bg-[#0A0A0A] text-white rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Harga Modal (Kasir)</p>
+            <p id="calcOutModal" class="text-xl font-extrabold text-white mt-0.5">Rp 0</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Kurs Dipakai</p>
+            <p id="calcOutRateInfo" class="text-xs font-bold text-gray-300 mt-0.5">-</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Harga Jual Rekomendasi</p>
+          <p id="calcOutSell" class="text-3xl font-black tracking-tight text-white mt-0.5">Rp 0</p>
+        </div>
+
+        <div class="bg-white/10 rounded-xl p-3.5 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] uppercase tracking-wider text-gray-300 font-semibold">Estimasi Cuan Bersih</p>
+            <p id="calcOutProfit" class="text-2xl font-black text-[#10B981] mt-0.5">+Rp 0</p>
+          </div>
+          <button type="button" onclick="transferCalcToOrder()" 
+            class="bg-white text-[#0A0A0A] px-3.5 py-2 rounded-xl text-xs font-extrabold active:scale-95 transition">
+            + Catat Barang
+          </button>
+        </div>
+      </div>
+
+      <!-- Pengaturan Kurs Pasar Ringkas -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Kurs Pasar Dasar (IDR)</h3>
+          <span class="text-[10px] font-semibold text-gray-400">Tersimpan Otomatis</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-0.5">1 JPY</label>
+            <input type="number" step="any" id="rate-JPY" oninput="saveRatesFromUI()" class="w-full bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-0.5">1 SGD</label>
+            <input type="number" step="any" id="rate-SGD" oninput="saveRatesFromUI()" class="w-full bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-0.5">1 USD</label>
+            <input type="number" step="any" id="rate-USD" oninput="saveRatesFromUI()" class="w-full bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-0.5">1 EUR</label>
+            <input type="number" step="any" id="rate-EUR" oninput="saveRatesFromUI()" class="w-full bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-0.5">1 KRW</label>
+            <input type="number" step="any" id="rate-KRW" oninput="saveRatesFromUI()" class="w-full bg-[#F3F4F6] rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none">
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: TRIP & BAGASI                       -->
+    <!-- ========================================== -->
+    <section id="tab-trip" class="space-y-4 hidden">
+
+      <!-- Ringkasan Potensi Keuntungan Bersih -->
+      <div class="bg-[#0A0A0A] text-white rounded-2xl p-5 shadow-sm">
+        <p class="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Total Keuntungan Bersih (Sudah Dibeli)</p>
+        <p id="tripTotalProfit" class="text-3xl font-black text-[#10B981] mt-1">Rp 0</p>
+        <div class="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-white/10 text-xs">
+          <div>
+            <span class="text-gray-400 block">Total Omzet (Sudah Dibeli)</span>
+            <span id="tripTotalRevenue" class="font-bold text-white text-sm">Rp 0</span>
+          </div>
+          <div>
+            <span class="text-gray-400 block">Sisa Piutang Pelanggan</span>
+            <span id="tripTotalUnpaid" class="font-bold text-white text-sm">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bar Indikator Berat Koper -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Kapasitas Bagasi Koper</h3>
+            <p class="text-[11px] text-gray-400 font-medium">Akumulasi barang berstatus Sudah Dibeli</p>
+          </div>
+          <p id="luggageText" class="text-sm font-black text-[#0A0A0A]">0 / 25 Kg</p>
+        </div>
+        <div class="w-full h-3 bg-[#F3F4F6] rounded-full overflow-hidden">
+          <div id="luggageBar" class="h-full bg-[#0A0A0A] rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Radar Batas Aman Bea Cukai (FOB USD 500) -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Radar Bea Cukai (FOB USD 500)</h3>
+            <p id="customsStatusText" class="text-[11px] text-[#10B981] font-bold">Aman di bawah batas bebas bea masuk</p>
+          </div>
+          <p id="customsUsdText" class="text-sm font-black text-[#0A0A0A]">$0 / $500</p>
+        </div>
+        <div class="w-full h-3 bg-[#F3F4F6] rounded-full overflow-hidden">
+          <div id="customsBar" class="h-full bg-[#10B981] rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p class="text-[11px] text-gray-400">Total nilai modal barang (Sudah Dibeli): <span id="customsIdrText" class="font-bold text-gray-600">Rp 0</span></p>
+      </div>
+
+      <!-- Pengaturan Trip Aktif & Rekening WA -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 space-y-3">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-gray-500">Pengaturan Trip & Info Transfer WA</h3>
+        
+        <div class="grid grid-cols-12 gap-2.5">
+          <div class="col-span-8">
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Nama Trip Aktif</label>
+            <input type="text" id="tripNameInput" oninput="saveTripSettings()" placeholder="Tokyo Autumn Run"
+              class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2 text-sm font-bold outline-none">
+          </div>
+          <div class="col-span-4">
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">Batas Bagasi (Kg)</label>
+            <input type="number" step="0.5" id="tripLuggageInput" oninput="saveTripSettings()" placeholder="25"
+              class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2 text-sm font-bold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 mb-1">Info Rekening (Otomatis di Tagihan WA)</label>
+          <input type="text" id="tripBankInput" oninput="saveTripSettings()" placeholder="BCA 1234567890 a/n Porto"
+            class="w-full bg-[#F3F4F6] rounded-xl px-3 py-2 text-sm font-medium outline-none">
+        </div>
+
+        <div class="pt-2 border-t border-gray-100 flex items-center justify-between">
+          <button type="button" onclick="clearCompletedOrAll()" class="text-xs font-bold text-red-600 py-1.5">
+            Reset Semua Data Belanjaan
+          </button>
+          <span class="text-[11px] text-gray-400 font-medium">Porto Personal v1.0</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- TOAST NOTIFIKASI RINGKAS -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#0A0A0A] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-200">
+    Tersalin ke Clipboard
+  </div>
+
+  <!-- NAVIGASI BAWAH (3 MENU BOTTOM BAR) -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 pt-2 safe-bottom z-40">
+    <div class="grid grid-cols-3 gap-2">
+      <button onclick="switchTab('orders')" id="nav-orders" class="flex flex-col items-center justify-center py-1.5 rounded-xl text-[#0A0A0A] font-extrabold transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <span class="text-[11px]">Belanjaan</span>
+      </button>
+
+      <button onclick="switchTab('calc')" id="nav-calc" class="flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400 font-semibold transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        <span class="text-[11px]">Kalkulator</span>
+      </button>
+
+      <button onclick="switchTab('trip')" id="nav-trip" class="flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400 font-semibold transition">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <span class="text-[11px]">Trip & Bagasi</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- LOGIKA JAVASCRIPT MURNI + LOCALSTORAGE -->
+  <script>
+    const STORAGE_KEY = 'porto_standalone_v1';
+
+    // State Default
+    let state = {
+      trip: {
+        name: 'Tokyo Run',
+        maxKg: 25,
+        bankInfo: 'BCA 8720192831 a/n Porto Jastip'
+      },
+      rates: {
+        IDR: 1,
+        JPY: 108,
+        SGD: 11900,
+        USD: 16000,
+        EUR: 17200,
+        KRW: 11.8
+      },
+      useBuffer: true,
+      orderDiscMode: 'buyer', // 'buyer' | 'split' | 'jastipper'
+      calcDiscMode: 'buyer',
+      filterStatus: 'ALL',
+      orders: []
+    };
+
+    // Format Angka Rupiah
+    function formatRp(num) {
+      const n = Math.round(Number(num) || 0);
+      return 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    // Load & Save LocalStorage
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state = {
+            ...state,
+            ...parsed,
+            trip: { ...state.trip, ...(parsed.trip || {}) },
+            rates: { ...state.rates, ...(parsed.rates || {}) }
+          };
+        }
+      } catch (e) {
+        console.error('Gagal memuat localStorage:', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Gagal menyimpan localStorage:', e);
+      }
+      renderAll();
+    }
+
+    // Toast Notification
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        t.classList.remove('opacity-100');
+        t.classList.add('opacity-0');
+      }, 1800);
+    }
+
+    // Perhitungan Inti Harga & Margin
+    function calculateMetrics(rawPrice, currency, discountPct, feeRp, discMode, useBankBuffer) {
+      const price = Math.max(0, Number(rawPrice) || 0);
+      const disc = Math.min(100, Math.max(0, Number(discountPct) || 0));
+      const fee = Math.max(0, Number(feeRp) || 0);
+      const baseRate = Number(state.rates[currency]) || 1;
+      const effectiveRate = (currency === 'IDR' || !useBankBuffer) ? baseRate : baseRate * 1.025;
+
+      const normalIdr = price * effectiveRate;
+      const discountIdr = normalIdr * (disc / 100);
+      const modalIdr = normalIdr - discountIdr;
+
+      let customerItemPrice = normalIdr;
+      if (discMode === 'buyer') {
+        customerItemPrice = normalIdr - discountIdr;
+      } else if (discMode === 'split') {
+        customerItemPrice = normalIdr - (discountIdr * 0.5);
+      } else if (discMode === 'jastipper') {
+        customerItemPrice = normalIdr;
+      }
+
+      const sellIdr = Math.round(customerItemPrice + fee);
+      const profitIdr = Math.round(sellIdr - modalIdr);
+
+      return {
+        effectiveRate,
+        modalIdr: Math.round(modalIdr),
+        sellIdr,
+        profitIdr
+      };
+    }
+
+    // Navigasi Tab Bawah
+    function switchTab(tabName) {
+      ['orders', 'calc', 'trip'].forEach(t => {
+        const sec = document.getElementById('tab-' + t);
+        const nav = document.getElementById('nav-' + t);
+        if (t === tabName) {
+          sec.classList.remove('hidden');
+          nav.classList.remove('text-gray-400', 'font-semibold');
+          nav.classList.add('text-[#0A0A0A]', 'font-extrabold');
+        } else {
+          sec.classList.add('hidden');
+          nav.classList.remove('text-[#0A0A0A]', 'font-extrabold');
+          nav.classList.add('text-gray-400', 'font-semibold');
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // LOGIKA TAB 1: BELANJAAN
+    // ==========================================
+    function setOrderDiscMode(mode) {
+      state.orderDiscMode = mode;
+      ['buyer', 'split', 'jastipper'].forEach(m => {
+        const btn = document.getElementById('ordMode-' + m);
+        if (m === mode) {
+          btn.className = 'py-1.5 rounded-lg bg-[#0A0A0A] text-white transition';
+        } else {
+          btn.className = 'py-1.5 rounded-lg text-gray-600 transition';
+        }
+      });
+      updateOrderPreview();
+    }
+
+    function updateOrderPreview() {
+      const currency = document.getElementById('ordCurrency').value;
+      const price = document.getElementById('ordPrice').value;
+      const disc = document.getElementById('ordDiscount').value;
+      const fee = document.getElementById('ordFee').value;
+
+      const res = calculateMetrics(price, currency, disc, fee, state.orderDiscMode, state.useBuffer);
+      document.getElementById('ordPreviewSell').textContent = formatRp(res.sellIdr);
+      document.getElementById('ordPreviewProfit').textContent = '+' + formatRp(res.profitIdr);
+    }
+
+    function resetOrderForm() {
+      document.getElementById('ordCustomer').value = '';
+      document.getElementById('ordItem').value = '';
+      document.getElementById('ordPrice').value = '';
+      document.getElementById('ordDiscount').value = '0';
+      document.getElementById('ordDp').value = '0';
+      document.getElementById('ordWeight').value = '0.5';
+      updateOrderPreview();
+    }
+
+    function handleAddOrder(e) {
+      e.preventDefault();
+      const customer = document.getElementById('ordCustomer').value.trim();
+      const item = document.getElementById('ordItem').value.trim();
+      const currency = document.getElementById('ordCurrency').value;
+      const rawPrice = Number(document.getElementById('ordPrice').value) || 0;
+      const discount = Number(document.getElementById('ordDiscount').value) || 0;
+      const fee = Number(document.getElementById('ordFee').value) || 0;
+      const dp = Number(document.getElementById('ordDp').value) || 0;
+      const weight = Number(document.getElementById('ordWeight').value) || 0;
+
+      const calc = calculateMetrics(rawPrice, currency, discount, fee, state.orderDiscMode, state.useBuffer);
+
+      const newOrder = {
+        id: 'ORD-' + Date.now(),
+        customer,
+        item,
+        currency,
+        rawPrice,
+        discount,
+        fee,
+        dp,
+        weight,
+        discMode: state.orderDiscMode,
+        modalIdr: calc.modalIdr,
+        sellIdr: calc.sellIdr,
+        profitIdr: calc.profitIdr,
+        status: 'BELUM', // 'BELUM' | 'SUDAH' | 'KOSONG'
+        isPaid: dp >= calc.sellIdr && calc.sellIdr > 0
+      };
+
+      state.orders.unshift(newOrder);
+      saveState();
+      document.getElementById('ordItem').value = '';
+      document.getElementById('ordPrice').value = '';
+      updateOrderPreview();
+      showToast('Barang disimpan');
+    }
+
+    // 1-Tap Ganti Status: [Belum Dibeli] -> [Sudah Dibeli] -> [Kosong]
+    function cycleOrderStatus(id) {
+      const idx = state.orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      const current = state.orders[idx].status;
+      const nextMap = { 'BELUM': 'SUDAH', 'SUDAH': 'KOSONG', 'KOSONG': 'BELUM' };
+      state.orders[idx].status = nextMap[current] || 'BELUM';
+      saveState();
+    }
+
+    // Toggle Lunas / Kurang Bayar 1-Tap
+    function toggleOrderPaid(id) {
+      const idx = state.orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+      state.orders[idx].isPaid = !state.orders[idx].isPaid;
+      saveState();
+    }
+
+    function deleteOrder(id) {
+      state.orders = state.orders.filter(o => o.id !== id);
+      saveState();
+      showToast('Barang dihapus');
+    }
+
+    // Salin Tagihan WA ke Clipboard
+    function copyWaInvoice(id) {
+      const o = state.orders.find(item => item.id === id);
+      if (!o) return;
+
+      const sisa = o.isPaid ? 0 : Math.max(0, o.sellIdr - o.dp);
+      const statusBayar = o.isPaid || sisa === 0 ? 'LUNAS ✅' : `Kurang Bayar: *${formatRp(sisa)}*`;
+
+      const text = [
+        `*TAGIHAN JASTIP — ${state.trip.name.toUpperCase()}*`,
+        `Halo Kak *${o.customer}*, berikut rincian pesananmu:`,
+        ``,
+        `• Barang: ${o.item}`,
+        `• Status Barang: ${o.status === 'SUDAH' ? 'Sudah Dibeli ✅' : o.status === 'KOSONG' ? 'Stok Kosong ❌' : 'Dalam Antrean Belanja'}`,
+        `• Total Harga: *${formatRp(o.sellIdr)}*`,
+        `• DP Masuk: ${formatRp(o.dp)}`,
+        `• Status: ${statusBayar}`,
+        ``,
+        `Pembayaran dapat ditransfer ke:`,
+        `*${state.trip.bankInfo}*`,
+        ``,
+        `Terima kasih!`
+      ].join('\n');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Tagihan WA disalin!');
+        }).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Tagihan WA disalin!');
+      } catch (err) {
+        alert('Gagal menyalin otomatis.');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function setFilter(flt) {
+      state.filterStatus = flt;
+      ['ALL', 'BELUM', 'SUDAH', 'KOSONG'].forEach(k => {
+        const btn = document.getElementById('flt-' + k);
+        if (k === flt) {
+          btn.className = 'px-3 py-1.5 rounded-full text-xs font-bold bg-[#0A0A0A] text-white';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200';
+        }
+      });
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const container = document.getElementById('ordersList');
+      const filtered = state.orders.filter(o => state.filterStatus === 'ALL' ? true : o.status === state.filterStatus);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-gray-200/70">
+            <p class="text-xs font-bold text-gray-400">Belum ada catatan barang di kategori ini.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(o => {
+        const sisa = o.isPaid ? 0 : Math.max(0, o.sellIdr - o.dp);
+        const lunas = o.isPaid || sisa === 0;
+
+        let statusBadgeClass = 'bg-gray-100 text-gray-700 border-gray-300';
+        let statusLabel = 'Belum Dibeli';
+        if (o.status === 'SUDAH') {
+          statusBadgeClass = 'bg-[#0A0A0A] text-white border-[#0A0A0A]';
+          statusLabel = 'Sudah Dibeli ✓';
+        } else if (o.status === 'KOSONG') {
+          statusBadgeClass = 'bg-red-50 text-red-600 border-red-200 line-through';
+          statusLabel = 'Kosong ✕';
+        }
+
+        return `
+          <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-gray-200/80 space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wide bg-[#F3F4F6] text-[#0A0A0A] px-2 py-0.5 rounded-md">${escapeHtml(o.customer)}</span>
+                  <span class="text-[11px] font-semibold text-gray-400">${o.weight} kg</span>
+                </div>
+                <h3 class="text-sm font-extrabold text-[#0A0A0A] mt-1">${escapeHtml(o.item)}</h3>
+                <p class="text-[11px] text-gray-400 font-medium">
+                  Harga Rak: ${o.currency} ${Number(o.rawPrice).toLocaleString('id-ID')} ${o.discount > 0 ? `(Diskon ${o.discount}%)` : ''}
+                </p>
+              </div>
+
+              <div class="text-right">
+                <p class="text-sm font-black text-[#0A0A0A]">${formatRp(o.sellIdr)}</p>
+                <p class="text-[11px] font-bold text-[#10B981]">Cuan +${formatRp(o.profitIdr)}</p>
+                <button onclick="toggleOrderPaid('${o.id}')" class="mt-1 inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md ${lunas ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-amber-100 text-amber-800'}">
+                  ${lunas ? 'LUNAS' : 'Sisa ' + formatRp(sisa)}
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
+              <button onclick="cycleOrderStatus('${o.id}')" class="flex-1 py-2 px-3 rounded-xl border text-xs font-extrabold transition active:scale-95 ${statusBadgeClass}">
+                ${statusLabel}
+              </button>
+
+              <button onclick="copyWaInvoice('${o.id}')" class="py-2 px-3 rounded-xl bg-[#F3F4F6] hover:bg-gray-200 text-[#0A0A0A] text-xs font-extrabold flex items-center space-x-1 active:scale-95 transition">
+                <span>Salin Tagihan WA</span>
+              </button>
+
+              <button onclick="deleteOrder('${o.id}')" class="p-2 text-gray-300 hover:text-red-500 transition" title="Hapus">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // LOGIKA TAB 2: KALKULATOR CEPAT
+    // ==========================================
+    function setCalcDiscMode(mode) {
+      state.calcDiscMode = mode;
+      ['buyer', 'split', 'jastipper'].forEach(m => {
+        const btn = document.getElementById('calcMode-' + m);
+        if (m === mode) {
+          btn.className = 'w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition bg-[#0A0A0A] text-white border-[#0A0A0A]';
+        } else {
+          btn.className = 'w-full text-left px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition bg-[#F3F4F6] text-[#0A0A0A] border-transparent';
+        }
+      });
+      runQuickCalc();
+    }
+
+    function runQuickCalc() {
+      const currency = document.getElementById('calcCurrency').value;
+      const price = document.getElementById('calcPrice').value;
+      const disc = document.getElementById('calcDiscount').value;
+      const fee = document.getElementById('calcFee').value;
+      const useBuffer = document.getElementById('calcBufferToggle').checked;
+      state.useBuffer = useBuffer;
+
+      const res = calculateMetrics(price, currency, disc, fee, state.calcDiscMode, useBuffer);
+
+      document.getElementById('calcOutModal').textContent = formatRp(res.modalIdr);
+      document.getElementById('calcOutSell').textContent = formatRp(res.sellIdr);
+      document.getElementById('calcOutProfit').textContent = '+' + formatRp(res.profitIdr);
+      document.getElementById('calcOutRateInfo').textContent = `1 ${currency} = Rp ${res.effectiveRate.toFixed(1)}`;
+    }
+
+    function transferCalcToOrder() {
+      const currency = document.getElementById('calcCurrency').value;
+      const price = document.getElementById('calcPrice').value;
+      const disc = document.getElementById('calcDiscount').value;
+      const fee = document.getElementById('calcFee').value;
+
+      document.getElementById('ordCurrency').value = currency;
+      document.getElementById('ordPrice').value = price;
+      document.getElementById('ordDiscount').value = disc || 0;
+      document.getElementById('ordFee').value = fee || 0;
+      setOrderDiscMode(state.calcDiscMode);
+      switchTab('orders');
+      document.getElementById('ordCustomer').focus();
+      showToast('Diteruskan ke Form Belanjaan');
+    }
+
+    function saveRatesFromUI() {
+      ['JPY', 'SGD', 'USD', 'EUR', 'KRW'].forEach(cur => {
+        const val = Number(document.getElementById('rate-' + cur).value);
+        if (val > 0) state.rates[cur] = val;
+      });
+      saveState();
+      runQuickCalc();
+      updateOrderPreview();
+    }
+
+    // ==========================================
+    // LOGIKA TAB 3: TRIP & BAGASI
+    // ==========================================
+    function saveTripSettings() {
+      state.trip.name = document.getElementById('tripNameInput').value.trim() || 'Trip Aktif';
+      state.trip.maxKg = Math.max(1, Number(document.getElementById('tripLuggageInput').value) || 25);
+      state.trip.bankInfo = document.getElementById('tripBankInput').value.trim() || '-';
+      saveState();
+    }
+
+    function clearCompletedOrAll() {
+      if (confirm('Hapus seluruh daftar belanjaan di trip ini?')) {
+        state.orders = [];
+        saveState();
+        showToast('Data belanjaan direset');
+      }
+    }
+
+    function renderTripDashboard() {
+      const boughtOrders = state.orders.filter(o => o.status === 'SUDAH');
+
+      const totalProfit = boughtOrders.reduce((acc, o) => acc + (o.profitIdr || 0), 0);
+      const totalRevenue = boughtOrders.reduce((acc, o) => acc + (o.sellIdr || 0), 0);
+      const totalModalIdr = boughtOrders.reduce((acc, o) => acc + (o.modalIdr || 0), 0);
+      const totalWeight = boughtOrders.reduce((acc, o) => acc + (Number(o.weight) || 0), 0);
+
+      const totalUnpaid = state.orders
+        .filter(o => o.status !== 'KOSONG' && !o.isPaid)
+        .reduce((acc, o) => acc + Math.max(0, (o.sellIdr || 0) - (o.dp || 0)), 0);
+
+      // Update Header & Profit
+      document.getElementById('headerTripBadge').textContent = state.trip.name;
+      document.getElementById('headerProfit').textContent = formatRp(totalProfit);
+      document.getElementById('tripTotalProfit').textContent = formatRp(totalProfit);
+      document.getElementById('tripTotalRevenue').textContent = formatRp(totalRevenue);
+      document.getElementById('tripTotalUnpaid').textContent = formatRp(totalUnpaid);
+
+      // Update Bagasi Bar
+      const maxKg = state.trip.maxKg || 25;
+      const kgPct = Math.min(100, (totalWeight / maxKg) * 100);
+      document.getElementById('luggageText').textContent = `${totalWeight.toFixed(1)} / ${maxKg} Kg`;
+      const lugBar = document.getElementById('luggageBar');
+      lugBar.style.width = `${kgPct}%`;
+      lugBar.className = `h-full rounded-full transition-all duration-300 ${totalWeight > maxKg ? 'bg-red-600' : 'bg-[#0A0A0A]'}`;
+
+      // Update Radar Bea Cukai FOB USD 500
+      const usdRate = Number(state.rates.USD) || 16000;
+      const totalUsd = totalModalIdr / usdRate;
+      const usdPct = Math.min(100, (totalUsd / 500) * 100);
+
+      document.getElementById('customsUsdText').textContent = `$${totalUsd.toFixed(0)} / $500`;
+      document.getElementById('customsIdrText').textContent = formatRp(totalModalIdr);
+
+      const customsBar = document.getElementById('customsBar');
+      const customsStatus = document.getElementById('customsStatusText');
+      customsBar.style.width = `${usdPct}%`;
+
+      if (totalUsd >= 500) {
+        customsBar.className = 'h-full bg-red-600 rounded-full transition-all duration-300';
+        customsStatus.textContent = 'PERINGATAN: Melewati batas bebas bea masuk USD 500!';
+        customsStatus.className = 'text-[11px] text-red-600 font-bold';
+      } else if (totalUsd >= 400) {
+        customsBar.className = 'h-full bg-amber-500 rounded-full transition-all duration-300';
+        customsStatus.textContent = 'Waspada: Mendekati batas FOB USD 500';
+        customsStatus.className = 'text-[11px] text-amber-600 font-bold';
+      } else {
+        customsBar.className = 'h-full bg-[#10B981] rounded-full transition-all duration-300';
+        customsStatus.textContent = 'Aman di bawah batas bebas bea masuk';
+        customsStatus.className = 'text-[11px] text-[#10B981] font-bold';
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function syncInputsFromState() {
+      ['JPY', 'SGD', 'USD', 'EUR', 'KRW'].forEach(cur => {
+        const el = document.getElementById('rate-' + cur);
+        if (el) el.value = state.rates[cur];
+      });
+      document.getElementById('tripNameInput').value = state.trip.name;
+      document.getElementById('tripLuggageInput').value = state.trip.maxKg;
+      document.getElementById('tripBankInput').value = state.trip.bankInfo;
+      document.getElementById('calcBufferToggle').checked = state.useBuffer;
+    }
+
+    function renderAll() {
+      renderOrders();
+      renderTripDashboard();
+    }
+
+    // Inisialisasi saat aplikasi dibuka
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      syncInputsFromState();
+      setOrderDiscMode(state.orderDiscMode);
+      setCalcDiscMode(state.calcDiscMode);
+      updateOrderPreview();
+      runQuickCalc();
+      renderAll();
+    });
+  </script>
+</body>
+</html>
